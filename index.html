@@ -187,6 +187,29 @@ footer p{color:var(--muted);font-size:14px;margin-top:6px}
 #music.playing::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:1px solid rgba(163,36,58,.4);animation:ring 2s ease-out infinite}
 @keyframes ring{from{transform:scale(.9);opacity:1}to{transform:scale(1.35);opacity:0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.i-line,.i-tap,.i-arch .orn{opacity:1;transform:none;filter:none}.i-arch path{stroke-dashoffset:0}}
+
+/* ========== DARK THEME (matches intro) ========== */
+:root{--bg:#1e0810;--paper:rgba(255,255,255,.05);--ink:#f3e3c0;--muted:#c9a777;--gold1:#d9b25e;--gold2:#fff3cf;--gold3:#b8892f;--line:rgba(226,194,122,.28);color-scheme:dark}
+body{background:#1e0810}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse at 50% 12%,#5a1a2c 0%,#3a0f1c 36%,#1e0810 70%,#0d0306 100%)}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));box-shadow:0 14px 44px rgba(0,0,0,.4)}
+.card::before{border-color:rgba(226,194,122,.2)}
+.inv-text{color:#ead9bd}.inv-text strong{color:#f6d98c}
+.cd .u{box-shadow:0 8px 22px rgba(0,0,0,.3)}
+.ico{background:rgba(226,194,122,.1);border-color:rgba(226,194,122,.32)}
+.btn{color:#2a0b14;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+.btn svg{stroke:#2a0b14}
+.btn.ghost{color:#ecd59c;border-color:rgba(226,194,122,.6);box-shadow:none}
+.map-art{background:#2a0d16}
+.map-art svg{filter:invert(1) sepia(.6) hue-rotate(300deg) saturate(1.4) brightness(.8)}
+input[type=text],textarea,.choice button,.stepper{background:rgba(255,255,255,.05);color:var(--ink)}
+.choice button.on{background:rgba(226,194,122,.18);color:#f6e3a6}
+.stepper button{background:transparent;color:#ecd59c}
+.result{background:rgba(226,194,122,.07)}
+.err{color:#ff9fae}
+#music{box-shadow:0 0 0 1px rgba(226,194,122,.65),0 6px 18px rgba(0,0,0,.5)}
+.toast{background:#f3e3c0;color:#2a0b14}
+.i-flash{background:radial-gradient(circle,#fff8e0 0,#f3d588 40%,#c79a3e 70%)}
 </style>
 </head>
 <body class="locked">
