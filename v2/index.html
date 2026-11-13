@@ -502,49 +502,33 @@ const CONFIG = {
   // toast
   const toast = m => { const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); };
 
-  // ===== music (generated softly in the browser) =====
-  let ctx, master, playing=false, timer;
-  const notes=[[67,71,74,79],[64,67,71,76],[60,64,67,72],[62,66,69,74]]; // G Em C D
-  function midi(n){return 440*Math.pow(2,(n-69)/12)}
-  function tone(f,t,dur,vol){
-    const o=ctx.createOscillator(), g=ctx.createGain(), o2=ctx.createOscillator(), g2=ctx.createGain();
-    o.type='sine'; o.frequency.value=f; o2.type='triangle'; o2.frequency.value=f*2; g2.gain.value=.12;
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.02); g.gain.exponentialRampToValueAtTime(.0005,t+dur);
-    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(master); g.connect(rev);
-    o.start(t); o2.start(t); o.stop(t+dur+.1); o2.stop(t+dur+.1);
+  // ===== background music (music.mp3 next to this page) =====
+  let ctx, playing=false, bgm=null, bgmGain=null, pauseT;
+  const BGM_VOL=.6;
+  function initAudio(){ ctx=new (window.AudioContext||window.webkitAudioContext)(); }
+  function bgmInit(){
+    if(bgm) return;
+    bgm=new Audio('music.mp3'); bgm.loop=true; bgm.preload='auto';
+    try{ if(!ctx) initAudio(); const src=ctx.createMediaElementSource(bgm); bgmGain=ctx.createGain(); bgmGain.gain.value=0; src.connect(bgmGain); bgmGain.connect(ctx.destination); }
+    catch(e){ bgmGain=null; bgm.volume=BGM_VOL; }
   }
-  let rev, step=0, nextT=0;
-  function initAudio(){
-    ctx=new (window.AudioContext||window.webkitAudioContext)();
-    master=ctx.createGain(); master.gain.value=.0; master.connect(ctx.destination);
-    rev=ctx.createConvolver(); const len=ctx.sampleRate*2.5, b=ctx.createBuffer(2,len,ctx.sampleRate);
-    for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
-    rev.buffer=b; const rg=ctx.createGain(); rg.gain.value=.35; rev.connect(rg); rg.connect(master);
-  }
-  function schedule(){
-    while(nextT < ctx.currentTime + .6){
-      const bar=Math.floor(step/8)%4, i=step%8, ch=notes[bar];
-      const seq=[0,1,2,3,2,1,2,1];
-      tone(midi(ch[seq[i]]), nextT, 1.6, .09);
-      if(i===0) tone(midi(ch[0]-12), nextT, 3.2, .07);
-      if(i===4 && Math.random()>.4) tone(midi(ch[3]+12), nextT+.15, 1.2, .03);
-      nextT += .42; step++;
-    }
-  }
+  function uiMusic(on){ playing=on; $('#music').classList.toggle('playing',on);
+    $('#musicIco').innerHTML=on?'<path d="M7 5h3v14H7zM14 5h3v14h-3z"/>':'<path d="M8 5v14l11-7z"/>'; }
   function play(){
-    if(!ctx) initAudio();
-    try{ctx.resume()}catch(e){}
-    nextT=ctx.currentTime+.1; timer=setInterval(schedule,150); schedule();
-    master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(.9,ctx.currentTime+1.5);
-    playing=true; $('#music').classList.add('playing');
-    $('#musicIco').innerHTML='<path d="M7 5h3v14H7zM14 5h3v14h-3z"/>';
+    bgmInit(); clearTimeout(pauseT); try{ctx.resume()}catch(e){}
+    bgm.muted=false; uiMusic(true);
+    const pr=bgm.play(); if(pr&&pr.catch) pr.catch(()=>uiMusic(false));
+    if(bgmGain){ const t=ctx.currentTime; bgmGain.gain.cancelScheduledValues(t); bgmGain.gain.setValueAtTime(bgmGain.gain.value,t); bgmGain.gain.linearRampToValueAtTime(BGM_VOL,t+2); }
   }
   function pause(){
-    if(!ctx) return;
-    master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0,ctx.currentTime+.4);
-    setTimeout(()=>clearInterval(timer),450);
-    playing=false; $('#music').classList.remove('playing');
-    $('#musicIco').innerHTML='<path d="M8 5v14l11-7z"/>';
+    if(!bgm) return; uiMusic(false);
+    if(bgmGain){ const t=ctx.currentTime; bgmGain.gain.cancelScheduledValues(t); bgmGain.gain.setValueAtTime(bgmGain.gain.value,t); bgmGain.gain.linearRampToValueAtTime(0,t+.4); pauseT=setTimeout(()=>bgm.pause(),450); }
+    else bgm.pause();
+  }
+  // lets the music start later without another tap (needed on iPhone)
+  function bgmUnlock(){
+    bgmInit(); if(playing) return; bgm.muted=true;
+    const pr=bgm.play(); if(pr&&pr.then) pr.then(()=>{ if(!playing){bgm.pause(); bgm.currentTime=0;} bgm.muted=false; }).catch(()=>{bgm.muted=false});
   }
   $('#music').addEventListener('click',()=> playing?pause():play());
 
@@ -594,6 +578,7 @@ const CONFIG = {
     }catch(e){}
   }
   sfxLoad();
+  try{ bgmInit(); }catch(e){}
   function archSfx(){ if(sfxBuf) sfxPlay(); else sfxWanted=true; }
 
   // ===== intro =====
@@ -601,6 +586,7 @@ const CONFIG = {
   function startIntro(){
     started=true; env.classList.add('go');
     try{ if(!ctx) initAudio(); ctx.resume(); archSfx(); }catch(e){}
+    try{ bgmUnlock(); }catch(e){}
     autoT=setTimeout(()=>openEnv(true),10500);
   }
   function openEnv(withSound){
