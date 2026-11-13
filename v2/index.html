@@ -581,26 +581,16 @@ const CONFIG = {
   // ===== intro sound: soft shimmer while the arch draws (ends when it completes) =====
   function archSfx(){
     const t0=ctx.currentTime+.05, D=3.5, out=ctx.createGain(); out.gain.value=.5; out.connect(ctx.destination);
-    // airy swell
-    const nb=ctx.createBuffer(1,ctx.sampleRate*D,ctx.sampleRate), nd=nb.getChannelData(0); for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
-    const ns=ctx.createBufferSource(); ns.buffer=nb; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.2;
-    bp.frequency.setValueAtTime(900,t0); bp.frequency.exponentialRampToValueAtTime(5200,t0+D);
-    const ng=ctx.createGain(); ng.gain.setValueAtTime(0,t0); ng.gain.linearRampToValueAtTime(.035,t0+D*.7); ng.gain.linearRampToValueAtTime(0,t0+D);
-    ns.connect(bp); bp.connect(ng); ng.connect(out); ns.start(t0); ns.stop(t0+D);
-    // rising pad
-    const po=ctx.createOscillator(), pg=ctx.createGain(); po.type='sine'; po.frequency.setValueAtTime(196,t0); po.frequency.exponentialRampToValueAtTime(392,t0+D);
-    pg.gain.setValueAtTime(0,t0); pg.gain.linearRampToValueAtTime(.05,t0+D*.6); pg.gain.linearRampToValueAtTime(0,t0+D);
-    po.connect(pg); pg.connect(out); po.start(t0); po.stop(t0+D+.05);
-    // sparkles climbing a pentatonic scale
-    const sc=[72,74,76,79,81,84,86,88,91,93,96,98,100]; const N=22;
-    for(let i=0;i<N;i++){const t=t0+.1+(D-.3)*i/N+Math.random()*.04, n=sc[Math.min(sc.length-1,Math.floor(i/N*sc.length)+(i%2))];
-      const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=midi(n);
-      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.03+.02*i/N,t+.01); g.gain.exponentialRampToValueAtTime(.0004,Math.min(t+.45,t0+D+.5));
-      o.connect(g); g.connect(out); o.start(t); o.stop(t+.5)}
-    // closing chime exactly when the frame completes
-    [91,96,103].forEach((n,i)=>{const t=t0+D, o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=midi(n);
-      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.05-.012*i,t+.01); g.gain.exponentialRampToValueAtTime(.0004,t+.7);
-      o.connect(g); g.connect(out); o.start(t); o.stop(t+.75)});
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900; lp.connect(out);
+    // one warm, slow swell (D - A - D) that rises with the drawing and fades as it completes
+    [[146.83,.06],[220,.04],[293.66,.03],[147.4,.03]].forEach(([f,v])=>{
+      const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(v,t0+D*.7); g.gain.linearRampToValueAtTime(0,t0+D);
+      o.connect(g); g.connect(lp); o.start(t0); o.stop(t0+D+.05)});
+    // a single soft bell the moment the frame is complete
+    [[587.33,.05],[880,.018]].forEach(([f,v])=>{const t=t0+D, o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.015); g.gain.exponentialRampToValueAtTime(.0004,t+1.1);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t+1.15)});
   }
 
   // ===== intro =====
