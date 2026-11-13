@@ -270,6 +270,16 @@ h2.title{font-size:28px;margin-bottom:0}
 h2.title::before{font-family:serif;margin-bottom:-6px}
 footer .names-s{font-size:32px}
 .i-sub{margin-top:10px}
+
+/* larger, clearer helper texts */
+.i-sub,.hero .day{font-size:15.5px;letter-spacing:1.5px;color:#ecd59c;font-weight:500}
+.i-start{font-size:19px;letter-spacing:1px;color:#f3e0ad;font-weight:500}
+.i-start svg{width:54px;height:54px}
+.i-tap{font-size:18px;color:#f3e0ad;font-weight:500}
+.i-tap span{padding:13px 30px;border-color:rgba(226,194,122,.8)}
+.scroll-hint{font-size:17px;font-weight:500;color:#ecd59c;gap:4px}
+.scroll-hint svg{width:22px;height:22px}
+.i-skip{font-size:14px;padding:8px 16px}
 </style>
 </head>
 <body class="locked">
@@ -590,10 +600,24 @@ const CONFIG = {
   try{ bgmInit(); }catch(e){}
   function archSfx(){ if(sfxBuf) sfxPlay(); else sfxWanted=true; }
 
+  // ===== short whoosh on taps =====
+  function whoosh(){
+    try{
+      if(!ctx) initAudio(); ctx.resume();
+      const t=ctx.currentTime+.01, D=.5, nb=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*D),ctx.sampleRate), d=nb.getChannelData(0);
+      for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+      const src=ctx.createBufferSource(); src.buffer=nb;
+      const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=.9;
+      bp.frequency.setValueAtTime(350,t); bp.frequency.exponentialRampToValueAtTime(3800,t+.2); bp.frequency.exponentialRampToValueAtTime(900,t+D);
+      const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.3,t+.16); g.gain.exponentialRampToValueAtTime(.0005,t+D);
+      src.connect(bp); bp.connect(g); g.connect(ctx.destination); src.start(t); src.stop(t+D);
+    }catch(e){}
+  }
+
   // ===== intro =====
   const env=$('#envelope'); let autoT, started=false;
   function startIntro(){
-    started=true; env.classList.add('go');
+    started=true; env.classList.add('go'); whoosh();
     try{ if(!ctx) initAudio(); ctx.resume(); archSfx(); }catch(e){}
     try{ bgmUnlock(); }catch(e){}
     autoT=setTimeout(()=>openEnv(true),10500);
@@ -603,7 +627,7 @@ const CONFIG = {
     clearTimeout(autoT);
     boom();
     env.classList.add('open');
-    if(withSound){try{play()}catch(e){}} else {$('#musicIco').innerHTML='<path d="M8 5v14l11-7z"/>'}
+    if(withSound){whoosh(); try{play()}catch(e){}} else {$('#musicIco').innerHTML='<path d="M8 5v14l11-7z"/>'}
     $('#music').classList.add('show');
     setTimeout(()=>{document.body.classList.remove('locked');$('#content').removeAttribute('aria-hidden');observe();},900);
     setTimeout(()=>{dustOn=false},2000);
